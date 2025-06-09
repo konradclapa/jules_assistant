@@ -60,6 +60,16 @@
              background-color: #666; /* Or use variables */
              color: white; /* Or use variables */
          }
+         .weather-display {
+             font-size: 48px; /* 3x button font size (16px * 3) */
+             text-align: center;
+             margin-top: 20px;
+             margin-bottom: 20px;
+             color: var(--text-color-light); /* Default to light theme text color */
+         }
+         body.dark-mode .weather-display {
+             color: var(--text-color-dark); /* Dark theme text color */
+         }
          .message {
              margin-top: 20px;
              font-size: 24px;
@@ -87,6 +97,13 @@
      <div class="gemini-logo">
          <img src="{{ url_for('static', filename='gemini.png') }}" alt="Gemini Logo">
          <span>Built with Gemini</span>
+     </div>
+     <div class="weather-display">
+         {% if weather_info and weather_info.temperature is not none %}
+             {{ weather_info.temperature }}°C {{ weather_info.emoji if weather_info.emoji }}
+         {% elif weather_info and weather_info.error %}
+             Error: {{ weather_info.error }}
+         {% endif %}
      </div>
      <div class="message">
          {{ message }}
