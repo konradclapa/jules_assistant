@@ -189,6 +189,96 @@ def test_index_route_button1_click_weather_success(mock_get_weather_func, client
     else:
         os.environ['OPENWEATHER_API_KEY'] = original_env_key
 
+@patch('app.requests.get')
+def test_weather_by_coords_route_success(mock_get, app_instance, client):
+    mock_weather_response = MagicMock()
+    mock_weather_response.status_code = 200
+    mock_weather_response.json.return_value = {"main": {"temp": 15.0}}
+    mock_get.return_value = mock_weather_response
+
+    original_env_key = os.environ.get('OPENWEATHER_API_KEY')
+    os.environ['OPENWEATHER_API_KEY'] = TEST_API_KEY
+
+    with app_instance.app_context(): # Ensure app context for url_for and other app operations
+        response = client.post('/weather_by_coords', json={"lat": 50.0, "lon": 20.0})
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data == {"temperature": 15.0, "emoji": ":(", "error": None}
+
+    if original_env_key is None:
+        del os.environ['OPENWEATHER_API_KEY']
+    else:
+        os.environ['OPENWEATHER_API_KEY'] = original_env_key
+
+def test_weather_by_coords_route_missing_params(client, app_instance):
+    original_env_key = os.environ.get('OPENWEATHER_API_KEY')
+    os.environ['OPENWEATHER_API_KEY'] = TEST_API_KEY
+
+    with app_instance.app_context():
+        response = client.post('/weather_by_coords', json={"lat": 50.0}) # Missing lon
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "Missing latitude or longitude" in data['error']
+
+    if original_env_key is None:
+        del os.environ['OPENWEATHER_API_KEY']
+    else:
+        os.environ['OPENWEATHER_API_KEY'] = original_env_key
+
+def test_weather_by_coords_route_invalid_params(client, app_instance):
+    original_env_key = os.environ.get('OPENWEATHER_API_KEY')
+    os.environ['OPENWEATHER_API_KEY'] = TEST_API_KEY
+
+    with app_instance.app_context():
+        response = client.post('/weather_by_coords', json={"lat": "not-a-number", "lon": 20.0})
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "Latitude and longitude must be valid numbers" in data['error']
+
+    if original_env_key is None:
+        del os.environ['OPENWEATHER_API_KEY']
+    else:
+        os.environ['OPENWEATHER_API_KEY'] = original_env_key
+
+def test_weather_by_coords_route_no_api_key(client, app_instance):
+    original_env_key = os.environ.pop('OPENWEATHER_API_KEY', None) # Remove if exists
+
+    with app_instance.app_context():
+        response = client.post('/weather_by_coords', json={"lat": 50.0, "lon": 20.0})
+
+    assert response.status_code == 500
+    data = response.get_json()
+    assert "API Key for weather service is not configured" in data['error']
+
+    if original_env_key is not None: # Restore only if it was originally set
+        os.environ['OPENWEATHER_API_KEY'] = original_env_key
+
+@patch('app.requests.get')
+def test_weather_by_coords_route_api_error(mock_get, app_instance, client):
+    mock_api_error_response = MagicMock()
+    mock_api_error_response.status_code = 503
+    mock_api_error_response.raise_for_status.side_effect = requests.exceptions.HTTPError(response=mock_api_error_response)
+    mock_get.return_value = mock_api_error_response
+
+    original_env_key = os.environ.get('OPENWEATHER_API_KEY')
+    os.environ['OPENWEATHER_API_KEY'] = TEST_API_KEY
+
+    with app_instance.app_context():
+        response = client.post('/weather_by_coords', json={"lat": 50.0, "lon": 20.0})
+
+    assert response.status_code == 200 # Route handles the error and returns JSON
+    data = response.get_json()
+    assert data["error"] is not None
+    assert "Weather API request failed with HTTP status: 503" in data["error"]
+
+    if original_env_key is None:
+        del os.environ['OPENWEATHER_API_KEY']
+    else:
+        os.environ['OPENWEATHER_API_KEY'] = original_env_key
+
 def test_toggle_theme_route(app_instance, client):
     # Ensure app_instance.config is used by set_current_theme by calling it within app_context
     with app_instance.app_context():

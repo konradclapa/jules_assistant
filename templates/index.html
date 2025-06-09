@@ -113,6 +113,84 @@
              <button type="submit" name="button1">Button 1</button>
              <button type="submit" name="button2">Button 2</button>
          </form>
+         <button type="button" id="local-weather-btn" class="theme-aware-button">Show My Local Weather</button>
      </div>
+
+ <script>
+ document.addEventListener('DOMContentLoaded', function() {
+     const localWeatherBtn = document.getElementById('local-weather-btn');
+     const weatherDisplayDiv = document.querySelector('.weather-display');
+
+     if (localWeatherBtn && weatherDisplayDiv) {
+         localWeatherBtn.addEventListener('click', function() {
+             weatherDisplayDiv.textContent = 'Fetching your location...';
+
+             if (!navigator.geolocation) {
+                 weatherDisplayDiv.textContent = 'Error: Geolocation is not supported by your browser.';
+                 return;
+             }
+
+             navigator.geolocation.getCurrentPosition(
+                 function(position) {
+                     const lat = position.coords.latitude;
+                     const lon = position.coords.longitude;
+
+                     weatherDisplayDiv.textContent = 'Fetching weather data...';
+
+                     fetch("{{ url_for('weather_by_coords_route') }}", {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                         },
+                         body: JSON.stringify({ lat: lat, lon: lon }),
+                     })
+                     .then(response => {
+                         if (!response.ok) {
+                             return response.json().then(errData => {
+                                 throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+                             }).catch(() => {
+                                 throw new Error(`HTTP error! status: ${response.status}`);
+                             });
+                         }
+                         return response.json();
+                     })
+                     .then(data => {
+                         if (data.error) {
+                             weatherDisplayDiv.textContent = 'Error: ' + data.error;
+                         } else if (data.temperature !== null && data.temperature !== undefined) {
+                             let displayEmoji = data.emoji || "";
+                             weatherDisplayDiv.textContent = `${data.temperature}°C ${displayEmoji}`;
+                         } else {
+                             weatherDisplayDiv.textContent = 'Error: Could not retrieve weather data.';
+                         }
+                     })
+                     .catch(error => {
+                         console.error('Fetch error:', error);
+                         weatherDisplayDiv.textContent = 'Error: ' + error.message;
+                     });
+                 },
+                 function(error) {
+                     let errorMessage = 'Error: Could not retrieve location. ';
+                     switch(error.code) {
+                         case error.PERMISSION_DENIED:
+                             errorMessage += "User denied the request for Geolocation.";
+                             break;
+                         case error.POSITION_UNAVAILABLE:
+                             errorMessage += "Location information is unavailable.";
+                             break;
+                         case error.TIMEOUT:
+                             errorMessage += "The request to get user location timed out.";
+                             break;
+                         case error.UNKNOWN_ERROR:
+                             errorMessage += "An unknown error occurred.";
+                             break;
+                     }
+                     weatherDisplayDiv.textContent = errorMessage;
+                 }
+             );
+         });
+     }
+ });
+ </script>
  </body>
  </html>
