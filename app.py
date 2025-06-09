@@ -1,7 +1,7 @@
 import json
 import os
 import requests
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from dotenv import load_dotenv
 
 app = Flask(__name__)
@@ -139,6 +139,66 @@ def toggle_theme():
     new_theme = 'dark' if current_theme == 'light' else 'light'
     set_current_theme(new_theme)
     return redirect(url_for('index'))
+
+def get_weather_by_coords(lat, lon, api_key):
+    weather_data = {"temperature": None, "error": None, "emoji": None}
+    weather_url = "https://api.openweathermap.org/data/2.5/weather"
+    weather_params = {
+        "lat": lat,
+        "lon": lon,
+        "appid": api_key,
+        "units": "metric"
+    }
+    try:
+        response = requests.get(weather_url, params=weather_params, timeout=10)
+        response.raise_for_status()
+        current_weather = response.json()
+        temp = current_weather.get("main", {}).get("temp")
+
+        if temp is not None:
+            weather_data["temperature"] = float(temp)
+            if weather_data["temperature"] > 20:
+                weather_data["emoji"] = ":)"
+            elif weather_data["temperature"] < 20:
+                weather_data["emoji"] = ":("
+        else:
+            weather_data["error"] = "Temperature data (main.temp) not found in weather API response."
+
+    except requests.exceptions.Timeout:
+        weather_data["error"] = "Weather API request timed out."
+    except requests.exceptions.HTTPError as e:
+        weather_data["error"] = f"Weather API request failed with HTTP status: {e.response.status_code}"
+    except requests.exceptions.RequestException as e:
+        weather_data["error"] = f"Weather API request failed: {e}"
+    except ValueError as e: # Handles JSON decoding errors
+        weather_data["error"] = f"Error parsing Weather JSON response: {e}"
+
+    return weather_data
+
+@app.route('/weather_by_coords', methods=['POST'])
+def weather_by_coords_route():
+    api_key = os.getenv("OPENWEATHER_API_KEY")
+    if not api_key:
+        return jsonify({"error": "API Key for weather service is not configured."}), 500
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid request: No JSON payload."}), 400
+
+    lat = data.get('lat')
+    lon = data.get('lon')
+
+    if lat is None or lon is None:
+        return jsonify({"error": "Missing latitude or longitude in request."}), 400
+
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except ValueError:
+        return jsonify({"error": "Latitude and longitude must be valid numbers."}), 400
+
+    weather_result = get_weather_by_coords(lat, lon, api_key)
+    return jsonify(weather_result)
 
 if __name__ == '__main__':
     app.run(debug=True)
