@@ -5,9 +5,19 @@
      <meta name="viewport" content="width=device-width, initial-scale=1.0">
      <title>Button Clicker</title>
      <style>
+         :root {
+             --background-color-light: yellow;
+             --text-color-light: black;
+             --button-background-light: #333;
+             --button-text-light: white;
+             --background-color-dark: black;
+             --text-color-dark: white;
+             --button-background-dark: #555;
+             --button-text-dark: white;
+         }
          body {
-             background-color: yellow;
-             color: black; /* To make the text visible on a black background */
+             background-color: var(--background-color-light);
+             color: var(--text-color-light);
              font-family: Arial, sans-serif;
              display: flex;
              flex-direction: column;
@@ -16,15 +26,39 @@
              height: 100vh;
              margin: 0;
          }
+         body.dark-mode {
+             background-color: var(--background-color-dark);
+             color: var(--text-color-dark);
+         }
          .button-container button {
              padding: 10px 20px;
              margin: 10px;
              font-size: 16px;
              cursor: pointer;
-             background-color: #333;
-             color: white;
+             background-color: var(--button-background-light);
+             color: var(--button-text-light);
              border: none;
              border-radius: 5px;
+         }
+         body.dark-mode .button-container button {
+             background-color: var(--button-background-dark);
+             color: var(--button-text-dark);
+         }
+         .theme-toggle-button {
+             position: absolute;
+             top: 10px;
+             left: 10px;
+             padding: 8px 15px;
+             cursor: pointer;
+             background-color: #444; /* Or use variables */
+             color: white; /* Or use variables */
+             border: none;
+             border-radius: 5px;
+             font-size: 14px;
+         }
+         body.dark-mode .theme-toggle-button {
+             background-color: #666; /* Or use variables */
+             color: white; /* Or use variables */
          }
          .message {
              margin-top: 20px;
@@ -44,7 +78,12 @@
          }
      </style>
  </head>
- <body>
+ <body class="{{ 'dark-mode' if current_theme == 'dark' else '' }}">
+     <form action="{{ url_for('toggle_theme') }}" method="post" style="position: absolute; top: 10px; left: 10px;">
+         <button type="submit" class="theme-toggle-button">
+             Toggle Theme (Currently {{ current_theme }})
+         </button>
+     </form>
      <div class="gemini-logo">
          <img src="{{ url_for('static', filename='gemini.png') }}" alt="Gemini Logo">
          <span>Built with Gemini</span>
