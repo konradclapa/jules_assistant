@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Button Clicker</title>
+     <style>
+         body {
+             background-color: black;
+             color: white; /* To make the text visible on a black background */
+             font-family: Arial, sans-serif;
+             display: flex;
+             flex-direction: column;
+             justify-content: center;
+             align-items: center;
+             height: 100vh;
+             margin: 0;
+         }
+         .button-container button {
+             padding: 10px 20px;
+             margin: 10px;
+             font-size: 16px;
+             cursor: pointer;
+             background-color: #333;
+             color: white;
+             border: none;
+             border-radius: 5px;
+         }
+         .message {
+             margin-top: 20px;
+             font-size: 24px;
+             font-weight: bold;
+         }
+         .gemini-logo {
+             position: absolute;
+             top: 10px;
+             right: 10px;
+             display: flex;
+             align-items: center;
+         }
+         .gemini-logo img {
+             height: 30px; /* Adjust size as needed */
+             margin-right: 10px;
+         }
+     </style>
+ </head>
+ <body>
+     <div class="gemini-logo">
+         <img src="{{ url_for('static', filename='gemini.png') }}" alt="Gemini Logo">
+         <span>Built with Gemini</span>
+     </div>
+     <div class="message">
+         {{ message }}
+     </div>
+     <div class="button-container">
+         <form method="post">
+             <button type="submit" name="button1">Button 1</button>
+             <button type="submit" name="button2">Button 2</button>
+         </form>
+     </div>
+ </body>
+ </html>
